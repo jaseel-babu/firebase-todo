@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 
 import 'package:todowithfirebase/controller/controller.dart';
 import 'package:todowithfirebase/main.dart';
@@ -23,11 +24,43 @@ class _HomePageState extends State<HomePage> {
   TextEditingController titleController = TextEditingController();
 
   TextEditingController notesController = TextEditingController();
+  Widget _getMessageList() {
+    return Column(
+      children: [
+        Expanded(
+          child: FirebaseAnimatedList(
+            controller: _scrollController,
+            query: controller.getMessageQuery(),
+            itemBuilder: (context, snapshot, animation, index) {
+              final json = snapshot.value ;
+              final message =
+                  Todomodel.fromMap(json );
+                  List a=snapshot.children.toList();
+                  
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount:a.length
+                 ,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      title: Text(message.title!),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
   final controller = Get.put(Controller());
-
+  var _scrollController;
   @override
   void initState() {
+    _scrollController = ScrollController();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       RemoteNotification notification = message.notification!;
       AndroidNotification? android = message.notification?.android;
@@ -48,73 +81,28 @@ class _HomePageState extends State<HomePage> {
       }
     });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new onMessageOpenedApp event was published!');
       RemoteNotification notification = message.notification!;
       AndroidNotification? android = message.notification?.android;
-      if (notification != null && android != null) {
-        // showDialog(
-        //     context: context,
-        //     builder: (_) {
-        //       return AlertDialog(
-        //         title: Text(notification.title!),
-        //         content: SingleChildScrollView(
-        //           child: Column(
-        //             crossAxisAlignment: CrossAxisAlignment.start,
-        //             children: [Text(notification.body!)],
-        //           ),
-        //         ),
-        //       );
-        //     });
-      }
     });
     super.initState();
   }
 
+  DatabaseReference ref = FirebaseDatabase.instance.ref();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: StreamBuilder<List<Todomodel>>(
-        stream: controller.read(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            controller.todo = snapshot.data!;
-            return GetBuilder<Controller>(
-              id: "updated",
-              builder: (controller) {
-                return ListView.separated(
-                  itemCount: controller.todo.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(controller.todo[index].title.toString()),
-                      trailing: IconButton(
-                        onPressed: () {
-                          controller
-                              .delete(controller.todo[index].uid.toString());
-                          controller.todo.removeAt(index);
-                          controller.update(["updated"]);
-                        },
-                        icon: Icon(Icons.delete),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) => Divider(),
-                );
-              },
-            );
-          }
-          return CircularProgressIndicator();
-        },
-      ),
+      appBar: AppBar(), body: _getMessageList(),
+     
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Get.defaultDialog(
             radius: 30,
             confirm: TextButton(
               onPressed: () async {
-                controller.storedatabase(
-                    titleController.text, notesController.text);
-
+                // controller.storedatabase(
+                //     titleController.text, notesController.text);
+                controller.saveMessage(titleController.text);
                 Get.back();
                 flutterLocalNotificationsPlugin.show(
                     0,
