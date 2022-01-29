@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -22,39 +19,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TextEditingController titleController = TextEditingController();
+  // getToken() async {
+  //   final token = await FirebaseMessaging.instance.getToken();
+  // }
 
   TextEditingController notesController = TextEditingController();
-  Widget _getMessageList() {
-    return Column(
-      children: [
-        Expanded(
-          child: FirebaseAnimatedList(
-            controller: _scrollController,
-            query: controller.getMessageQuery(),
-            itemBuilder: (context, snapshot, animation, index) {
-              final json = snapshot.value ;
-              final message =
-                  Todomodel.fromMap(json );
-                  List a=snapshot.children.toList();
-                  
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount:a.length
-                 ,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(message.title!),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 
   final controller = Get.put(Controller());
   var _scrollController;
@@ -92,65 +61,100 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(), body: _getMessageList(),
-     
+      appBar: AppBar(
+        title: const Text("TO-DO"),
+      ),
+      body: GetBuilder<Controller>(
+       id:"update",
+        builder: (controller) {
+          return _getMessageList();
+        }
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Get.defaultDialog(
-            radius: 30,
-            confirm: TextButton(
-              onPressed: () async {
-                // controller.storedatabase(
-                //     titleController.text, notesController.text);
-                controller.saveMessage(titleController.text);
-                Get.back();
-                flutterLocalNotificationsPlugin.show(
-                    0,
-                    "Added",
-                    "New Task Added",
-                    NotificationDetails(
-                        android: AndroidNotificationDetails(
-                            channel.id, channel.name,
-                            importance: Importance.high,
-                            color: Colors.blue,
-                            playSound: true,
-                            icon: '@mipmap/ic_launcher')));
-              },
-              child: const Text("Save"),
-            ),
-            title: "Title",
-            content: Column(
-              children: [
-                TextFormField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                    ),
-                    hintText: 'Title',
-                  ),
-                ),
-                TextFormField(
-                  controller: notesController,
-                  decoration: const InputDecoration(
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                    ),
-                    hintText: 'Notes',
-                  ),
-                ),
-              ],
-            ),
-          );
+          dialogogBox();
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Future<dynamic> dialogogBox() {
+    return Get.defaultDialog(
+      radius: 30,
+      confirm: TextButton(
+        onPressed: () async {
+          controller.saveMessage(titleController.text);
+          Get.back();
+          flutterLocalNotificationsPlugin.show(
+            0,
+            "Added",
+            "New Task Added",
+            NotificationDetails(
+              android: AndroidNotificationDetails(channel.id, channel.name,
+                  importance: Importance.high,
+                  color: Colors.blue,
+                  playSound: true,
+                  icon: '@mipmap/ic_launcher'),
+            ),
+          );
+        },
+        child: const Text("Save"),
+      ),
+      title: "Title",
+      content: Column(
+        children: [
+          TextFormField(
+            controller: titleController,
+            decoration: const InputDecoration(
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey, width: 1.0),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey, width: 1.0),
+              ),
+              hintText: 'Title',
+            ),
+          ),
+         
+        ],
+      ),
+    );
+  }
+
+  Widget _getMessageList() {
+    return Column(
+      children: [
+        Expanded(
+          child: FirebaseAnimatedList(
+            controller: _scrollController,
+            query: controller.getMessageQuery(),
+            itemBuilder: (context, snapshot, animation, index) {
+              final json = snapshot.value;
+              final message = Todomodel.fromMap(json);
+              controller.todo = snapshot.children.toList();
+
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: controller.todo.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: ListTile(
+                      title: Text(message.title!),
+                      trailing: IconButton(
+                          onPressed: () {
+                            controller.deleteTodo(
+                                snapshot.key!, index);
+                          },
+                          icon: const Icon(Icons.delete)),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
