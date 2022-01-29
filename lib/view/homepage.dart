@@ -65,11 +65,10 @@ class _HomePageState extends State<HomePage> {
         title: const Text("TO-DO"),
       ),
       body: GetBuilder<Controller>(
-       id:"update",
-        builder: (controller) {
-          return _getMessageList();
-        }
-      ),
+          id: "update",
+          builder: (controller) {
+            return _getMessageList();
+          }),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           dialogogBox();
@@ -84,6 +83,9 @@ class _HomePageState extends State<HomePage> {
       radius: 30,
       confirm: TextButton(
         onPressed: () async {
+          if (titleController.isBlank!) {
+            Get.snackbar("ADD NOTES", "WRITE SOMETHING",snackPosition: SnackPosition.BOTTOM);
+          }
           controller.saveMessage(titleController.text);
           Get.back();
           flutterLocalNotificationsPlugin.show(
@@ -101,7 +103,7 @@ class _HomePageState extends State<HomePage> {
         },
         child: const Text("Save"),
       ),
-      title: "Title",
+      title: "NOTE",
       content: Column(
         children: [
           TextFormField(
@@ -113,10 +115,9 @@ class _HomePageState extends State<HomePage> {
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.grey, width: 1.0),
               ),
-              hintText: 'Title',
+              hintText: 'NOTE',
             ),
           ),
-         
         ],
       ),
     );
@@ -143,8 +144,7 @@ class _HomePageState extends State<HomePage> {
                       title: Text(message.title!),
                       trailing: IconButton(
                           onPressed: () {
-                            controller.deleteTodo(
-                                snapshot.key!, index);
+                            controller.deleteTodo(snapshot.key!, index);
                           },
                           icon: const Icon(Icons.delete)),
                     ),
